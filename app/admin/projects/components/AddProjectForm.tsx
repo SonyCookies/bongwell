@@ -22,6 +22,7 @@ interface Project {
   description: string;
   status: string;
   clientName: string;
+  likeCount: number;
   images: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -119,6 +120,7 @@ export default function AddProjectForm({
 
       const newProject: Omit<Project, "id"> = {
         ...formData,
+        likeCount: 0,
         images: imageUrls,
         createdAt: new Date(),
         updatedAt: new Date(),

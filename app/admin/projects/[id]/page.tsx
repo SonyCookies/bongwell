@@ -1,15 +1,42 @@
-'use client';
+"use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from 'next/navigation';
-import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, X, Loader2, Upload, Maximize2, MinusCircle, ChevronLeft, ChevronRight, Save, Heart, MessageCircle, Send } from 'lucide-react';
-import { doc, getDoc, updateDoc, deleteDoc, arrayUnion, Timestamp } from "firebase/firestore";
+import Image from "next/image";
+import {
+  X,
+  Loader2,
+  Upload,
+  Maximize2,
+  MinusCircle,
+  ChevronLeft,
+  ChevronRight,
+  Save,
+  Heart,
+  Send,
+} from "lucide-react";
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  deleteDoc,
+  arrayUnion,
+  Timestamp,
+} from "firebase/firestore";
 import { db, storage } from "@/app/lib/firebase-config";
-import { deleteObject, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { use } from 'react';
-import { useAuth } from '@/app/contexts/AuthContext';
+import {
+  deleteObject,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+} from "firebase/storage";
+import { use } from "react";
+import { useAuth } from "@/app/contexts/AuthContext";
+
+interface FirestoreTimestamp {
+  toDate: () => Date;
+}
 
 interface Project {
   id: string;
@@ -18,7 +45,7 @@ interface Project {
   images: string[];
   status: string;
   clientName: string;
-  createdAt: Date | null;
+  createdAt: FirestoreTimestamp | Date;
   likeCount: number;
   likes?: string[];
   comments?: Comment[];
@@ -29,7 +56,7 @@ interface Comment {
   userId: string;
   userName: string;
   content: string;
-  createdAt: Timestamp;
+  createdAt: FirestoreTimestamp | Date;
 }
 
 interface ImagePreview {
@@ -41,6 +68,22 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+const transformCreatedAt = (
+  createdAt: FirestoreTimestamp | Date | null
+): FirestoreTimestamp | Date => {
+  if (!createdAt) {
+    return new Date();
+  }
+  if (createdAt instanceof Date) {
+    return createdAt;
+  }
+  if (typeof createdAt.toDate === "function") {
+    return createdAt.toDate();
+  }
+  console.warn("Invalid 'createdAt' format:", createdAt);
+  return new Date();
+};
+
 export default function ProjectViewEditPage({ params }: PageProps) {
   const resolvedParams = use(params);
   const [project, setProject] = useState<Project | null>(null);
@@ -49,8 +92,11 @@ export default function ProjectViewEditPage({ params }: PageProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [newImages, setNewImages] = useState<ImagePreview[]>([]);
   const [removedImages, setRemovedImages] = useState<string[]>([]);
-  const [selectedImage, setSelectedImage] = useState<{ url: string; index: number } | null>(null);
-  const [comment, setComment] = useState('');
+  const [selectedImage, setSelectedImage] = useState<{
+    url: string;
+    index: number;
+  } | null>(null);
+  const [comment, setComment] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const { user } = useAuth();
@@ -60,35 +106,24 @@ export default function ProjectViewEditPage({ params }: PageProps) {
       try {
         const projectDoc = await getDoc(doc(db, "projects", resolvedParams.id));
         if (projectDoc.exists()) {
-          const projectData = projectDoc.data() as Project & { createdAt?: any };
-          projectData.id = projectDoc.id;
-          projectData.likeCount = projectData.likeCount || 0;
-          projectData.likes = projectData.likes || [];
-          projectData.comments = projectData.comments || [];
-
-          // Safely handle `createdAt` field
-          if (projectData.createdAt) {
-            if (typeof projectData.createdAt.toDate === "function") {
-              projectData.createdAt = projectData.createdAt.toDate();
-            } else if (projectData.createdAt instanceof Date) {
-              projectData.createdAt = projectData.createdAt;
-            } else {
-              console.warn("Invalid 'createdAt' format:", projectData.createdAt);
-              projectData.createdAt = null;
-            }
-          } else {
-            projectData.createdAt = null;
-          }
-
-          setProject(projectData);
-          setEditedProject(projectData);
+          const projectData = projectDoc.data() as Project & {
+            createdAt?: FirestoreTimestamp | Date | null;
+          };
+          const transformedData = {
+            ...projectData,
+            id: projectDoc.id,
+            likeCount: projectData.likeCount || 0,
+            likes: projectData.likes || [],
+            comments: projectData.comments || [],
+            createdAt: transformCreatedAt(projectData.createdAt),
+          };
+          setProject(transformedData);
+          setEditedProject(transformedData);
         } else {
           console.error("Project not found");
-          // Handle not found case (e.g., redirect to 404 page)
         }
       } catch (error) {
         console.error("Error fetching project:", error);
-        // Handle error (e.g., show error message)
       } finally {
         setIsLoading(false);
       }
@@ -103,17 +138,18 @@ export default function ProjectViewEditPage({ params }: PageProps) {
     setIsEditing(true);
     try {
       const projectRef = doc(db, "projects", resolvedParams.id);
-      
-      // Upload new images
+
       const newImageUrls = await Promise.all(
         newImages.map(async (image) => {
-          const imageRef = ref(storage, `projects/${Date.now()}-${image.file.name}`);
+          const imageRef = ref(
+            storage,
+            `projects/${Date.now()}-${image.file.name}`
+          );
           await uploadBytes(imageRef, image.file);
           return getDownloadURL(imageRef);
         })
       );
 
-      // Remove deleted images from storage
       await Promise.all(
         removedImages.map(async (imageUrl) => {
           const imageRef = ref(storage, imageUrl);
@@ -121,10 +157,9 @@ export default function ProjectViewEditPage({ params }: PageProps) {
         })
       );
 
-      // Combine existing and new image URLs, excluding removed ones
       const updatedImageUrls = [
-        ...editedProject.images.filter(img => !removedImages.includes(img)),
-        ...newImageUrls
+        ...editedProject.images.filter((img) => !removedImages.includes(img)),
+        ...newImageUrls,
       ];
 
       const updatedProject = {
@@ -138,8 +173,6 @@ export default function ProjectViewEditPage({ params }: PageProps) {
       setEditedProject(updatedProject);
       setNewImages([]);
       setRemovedImages([]);
-
-      // Show success message or handle successful update
     } catch (error) {
       console.error("Error updating project:", error);
       // Handle error (e.g., show error message)
@@ -156,8 +189,8 @@ export default function ProjectViewEditPage({ params }: PageProps) {
       if (project.images && project.images.length > 0) {
         await Promise.all(
           project.images.map(async (imageUrl) => {
-            const imageRef = ref(storage, imageUrl); 
-            await deleteObject(imageRef); 
+            const imageRef = ref(storage, imageUrl);
+            await deleteObject(imageRef);
           })
         );
       }
@@ -166,7 +199,7 @@ export default function ProjectViewEditPage({ params }: PageProps) {
       await deleteDoc(doc(db, "projects", project.id));
 
       // Redirect to projects list page
-      router.push('/admin/projects');
+      router.push("/admin/projects");
     } catch (error) {
       console.error("Error deleting project:", error);
       // Handle error (e.g., show error message)
@@ -207,23 +240,23 @@ export default function ProjectViewEditPage({ params }: PageProps) {
       // User has already liked, so unlike
       await updateDoc(projectRef, {
         likeCount: project.likeCount - 1,
-        likes: (project.likes || []).filter(id => id !== userId)
+        likes: (project.likes || []).filter((id) => id !== userId),
       });
       setProject({
         ...project,
         likeCount: project.likeCount - 1,
-        likes: (project.likes || []).filter(id => id !== userId)
+        likes: (project.likes || []).filter((id) => id !== userId),
       });
     } else {
       // User hasn't liked, so add like
       await updateDoc(projectRef, {
         likeCount: project.likeCount + 1,
-        likes: arrayUnion(userId)
+        likes: arrayUnion(userId),
       });
       setProject({
         ...project,
         likeCount: project.likeCount + 1,
-        likes: [...(project.likes || []), userId]
+        likes: [...(project.likes || []), userId],
       });
     }
   };
@@ -233,28 +266,43 @@ export default function ProjectViewEditPage({ params }: PageProps) {
     if (!project || !user || !comment.trim()) return;
 
     const projectRef = doc(db, "projects", project.id);
+
+    let userName = user.displayName || "Anonymous";
+
+    if (!user.displayName) {
+      try {
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          userName = userData?.name || "Anonymous";
+          console.log(userName);
+        }
+      } catch (error) {
+        console.error("Error fetching user displayName from Firestore:", error);
+        userName = "Anonymous";
+      }
+    }
+
     const newComment: Comment = {
       id: Date.now().toString(),
       userId: user.uid,
-      userName: user.displayName || 'Anonymous',
+      userName: userName,
       content: comment.trim(),
-      createdAt: Timestamp.now()
+      createdAt: Timestamp.now(),
     };
 
     await updateDoc(projectRef, {
-      comments: arrayUnion(newComment)
+      comments: arrayUnion(newComment),
     });
 
     setProject({
       ...project,
-      comments: [...(project.comments || []), newComment]
+      comments: [...(project.comments || []), newComment],
     });
-    setComment('');
+    setComment("");
   };
-
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
 
   if (!project || !editedProject) {
     return <div>Project not found</div>;
@@ -262,35 +310,63 @@ export default function ProjectViewEditPage({ params }: PageProps) {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl text-gray-700 font-bold mb-6">View/Edit Project</h1>
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="space-y-4">
+        <div className="space-y-6">
+          {/* Title Input */}
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700">Title</label>
+            <label
+              htmlFor="title"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Title
+            </label>
             <input
               type="text"
               id="title"
               value={editedProject.title}
-              onChange={(e) => setEditedProject({ ...editedProject, title: e.target.value })}
+              onChange={(e) =>
+                setEditedProject({ ...editedProject, title: e.target.value })
+              }
               className="mt-1 block w-full text-gray-700 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
             />
           </div>
+
+          {/* Description Input */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
+            <label
+              htmlFor="description"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Description
+            </label>
             <textarea
               id="description"
               value={editedProject.description}
-              onChange={(e) => setEditedProject({ ...editedProject, description: e.target.value })}
-              rows={3}
+              onChange={(e) =>
+                setEditedProject({
+                  ...editedProject,
+                  description: e.target.value,
+                })
+              }
+              rows={4}
               className="mt-1 block w-full text-gray-700 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-            ></textarea>
+            />
           </div>
+
+          {/* Status Dropdown */}
           <div>
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700">Status</label>
+            <label
+              htmlFor="status"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Status
+            </label>
             <select
               id="status"
               value={editedProject.status}
-              onChange={(e) => setEditedProject({ ...editedProject, status: e.target.value })}
+              onChange={(e) =>
+                setEditedProject({ ...editedProject, status: e.target.value })
+              }
               className="mt-1 block w-full text-gray-700 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
             >
               <option value="planning">Planning</option>
@@ -299,19 +375,35 @@ export default function ProjectViewEditPage({ params }: PageProps) {
               <option value="on-hold">On Hold</option>
             </select>
           </div>
+
+          {/* Client Name */}
           <div>
-            <label htmlFor="clientName" className="block text-sm font-medium text-gray-700">Client Name</label>
+            <label
+              htmlFor="clientName"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Client Name
+            </label>
             <input
               type="text"
               id="clientName"
               value={editedProject.clientName}
-              onChange={(e) => setEditedProject({ ...editedProject, clientName: e.target.value })}
+              onChange={(e) =>
+                setEditedProject({
+                  ...editedProject,
+                  clientName: e.target.value,
+                })
+              }
               className="mt-1 block w-full text-gray-700 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
             />
           </div>
+
+          {/* Image Upload */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">Project Images</label>
-            <div className="mt-1 flex items-center">
+            <label className="block text-sm font-medium text-gray-700">
+              Project Images
+            </label>
+            <div className="mt-2 flex items-center space-x-3">
               <input
                 type="file"
                 id="images"
@@ -331,14 +423,22 @@ export default function ProjectViewEditPage({ params }: PageProps) {
                 Upload Images
               </button>
             </div>
+
+            {/* Image Previews */}
             <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-              {editedProject.images.map((image, index) => (
-                !removedImages.includes(image) && (
-                  <div key={`existing-${index}`} className="relative group aspect-square">
-                    <img
+              {editedProject.images.map((image, index) =>
+                !removedImages.includes(image) ? (
+                  <div
+                    key={`existing-${index}`}
+                    className="relative group aspect-square"
+                  >
+                    <Image
                       src={image}
                       alt={`Preview ${index + 1}`}
-                      className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                      fill
+                      className="object-cover rounded-lg"
+                      quality={75}
+                      sizes="(max-width: 768px) 100vw, 50vw"
                     />
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-lg">
                       <button
@@ -357,19 +457,30 @@ export default function ProjectViewEditPage({ params }: PageProps) {
                       </button>
                     </div>
                   </div>
-                )
-              ))}
+                ) : null
+              )}
               {newImages.map((image, index) => (
-                <div key={`new-${index}`} className="relative group aspect-square">
-                  <img
+                <div
+                  key={`new-${index}`}
+                  className="relative group aspect-square"
+                >
+                  <Image
                     src={image.preview}
                     alt={`New Preview ${index + 1}`}
-                    className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                    fill
+                    className="absolute inset-0 w-full h-full object-contain rounded-lg"
+                    sizes="(max-width: 768px) 100vw, 50vw"
                   />
+
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-lg">
                     <button
                       type="button"
-                      onClick={() => setSelectedImage({ url: image.preview, index: editedProject.images.length + index })}
+                      onClick={() =>
+                        setSelectedImage({
+                          url: image.preview,
+                          index: editedProject.images.length + index,
+                        })
+                      }
                       className="text-white p-1 hover:text-blue-300 transition-colors duration-200"
                     >
                       <Maximize2 className="h-5 w-5" />
@@ -386,10 +497,12 @@ export default function ProjectViewEditPage({ params }: PageProps) {
               ))}
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row sm:justify-end gap-2 sm:space-x-2 mt-4">
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row sm:justify-end gap-4 mt-6">
             <button
               type="button"
-              onClick={() => router.push('/admin/projects')}
+              onClick={() => router.push("/admin/projects")}
               className="w-full sm:w-auto px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors"
             >
               Cancel
@@ -428,7 +541,11 @@ export default function ProjectViewEditPage({ params }: PageProps) {
         <div className="flex items-center mb-4">
           <button
             onClick={handleLike}
-            className={`flex items-center ${project.likes?.includes(user?.uid || '') ? 'text-red-500' : 'text-gray-500'} hover:text-red-500 transition-colors`}
+            className={`flex items-center ${
+              project.likes?.includes(user?.uid || "")
+                ? "text-red-500"
+                : "text-gray-500"
+            } hover:text-red-500 transition-colors`}
           >
             <Heart className="w-6 h-6 mr-2" />
             <span>{project.likeCount} likes</span>
@@ -436,14 +553,24 @@ export default function ProjectViewEditPage({ params }: PageProps) {
         </div>
 
         <div className="mb-4">
-          <h3 className="text-lg font-semibold mb-2">Comments</h3>
-          {project.comments?.map((comment) => (
-            <div key={comment.id} className="bg-gray-100 rounded-lg p-3 mb-2">
-              <p className="font-semibold">{comment.userName}</p>
-              <p>{comment.content}</p>
-              <p className="text-xs text-gray-500">{comment.createdAt.toDate().toLocaleString()}</p>
-            </div>
-          ))}
+          <h3 className="text-lg font-semibold mb-2 text-gray-800">Comments</h3>
+          {project.comments?.map((comment) => {
+            const createdAt =
+              comment.createdAt instanceof Timestamp
+                ? comment.createdAt.toDate()
+                : comment.createdAt;
+            return (
+              <div key={comment.id} className="bg-gray-100 rounded-lg p-3 mb-2">
+                <p className="font-semibold text-gray-700">
+                  {comment.userName}
+                </p>
+                <p className="text-gray-500 text-sm mt-2">{comment.content}</p>
+                <p className="text-xs text-gray-500 mt-4">
+                  {createdAt ? createdAt.toLocaleString() : "No date available"}
+                </p>
+              </div>
+            );
+          })}
         </div>
 
         <form onSubmit={handleComment} className="flex items-center">
@@ -452,7 +579,7 @@ export default function ProjectViewEditPage({ params }: PageProps) {
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Add a comment..."
-            className="flex-grow mr-2 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-grow mr-2 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
           />
           <button
             type="submit"
@@ -473,11 +600,14 @@ export default function ProjectViewEditPage({ params }: PageProps) {
           >
             <div className="relative w-[90vw] h-[80vh] max-w-6xl">
               <div className="relative w-full h-full">
-                <img
+                <Image
                   src={selectedImage.url}
                   alt="Full size preview"
-                  className="w-full h-full object-contain"
+                  fill
+                  className="object-contain rounded-lg"
+                  sizes="(max-width: 768px) 100vw, 50vw"
                 />
+
                 <div className="absolute top-0 right-0 p-2 bg-black bg-opacity-50 rounded-bl-lg">
                   <button
                     onClick={() => setSelectedImage(null)}
@@ -490,9 +620,11 @@ export default function ProjectViewEditPage({ params }: PageProps) {
                   <button
                     onClick={() => {
                       const newIndex = selectedImage.index - 1;
-                      const newUrl = newIndex < editedProject.images.length 
-                        ? editedProject.images[newIndex] 
-                        : newImages[newIndex - editedProject.images.length].preview;
+                      const newUrl =
+                        newIndex < editedProject.images.length
+                          ? editedProject.images[newIndex]
+                          : newImages[newIndex - editedProject.images.length]
+                              .preview;
                       setSelectedImage({ url: newUrl, index: newIndex });
                     }}
                     className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 p-2 rounded-lg text-white hover:text-gray-300 transition-colors duration-200"
@@ -500,13 +632,16 @@ export default function ProjectViewEditPage({ params }: PageProps) {
                     <ChevronLeft className="h-8 w-8" />
                   </button>
                 )}
-                {selectedImage.index < editedProject.images.length + newImages.length - 1 && (
+                {selectedImage.index <
+                  editedProject.images.length + newImages.length - 1 && (
                   <button
                     onClick={() => {
                       const newIndex = selectedImage.index + 1;
-                      const newUrl = newIndex < editedProject.images.length 
-                        ? editedProject.images[newIndex] 
-                        : newImages[newIndex - editedProject.images.length].preview;
+                      const newUrl =
+                        newIndex < editedProject.images.length
+                          ? editedProject.images[newIndex]
+                          : newImages[newIndex - editedProject.images.length]
+                              .preview;
                       setSelectedImage({ url: newUrl, index: newIndex });
                     }}
                     className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 p-2 rounded-lg text-white hover:text-gray-300 transition-colors duration-200"
@@ -522,4 +657,3 @@ export default function ProjectViewEditPage({ params }: PageProps) {
     </div>
   );
 }
-

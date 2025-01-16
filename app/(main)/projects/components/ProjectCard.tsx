@@ -1,7 +1,7 @@
-import Link from 'next/link';
+import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Heart, MessageCircle, Calendar, User } from 'lucide-react';
+import { Heart, MessageCircle, Calendar, User } from "lucide-react";
 
 interface ProjectCardProps {
   project: {
@@ -48,7 +48,9 @@ export default function ProjectCard({ project }: ProjectCardProps) {
           <h2 className="text-xl font-bold text-gray-800 mb-2 line-clamp-1">
             {project.title}
           </h2>
-          <p className="text-gray-600 text-sm mb-4 line-clamp-2">{project.description}</p>
+          <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+            {project.description}
+          </p>
           <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
             <div className="flex items-center">
               <User className="w-4 h-4 mr-1" />
@@ -63,11 +65,11 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             <div className="flex items-center space-x-4">
               <div className="flex items-center text-sm">
                 <Heart className="w-4 h-4 mr-1 text-red-500" />
-                <span>{project.likeCount}</span>
+                <span className="text-gray-600">{project.likeCount}</span>
               </div>
               <div className="flex items-center text-sm">
                 <MessageCircle className="w-4 h-4 mr-1 text-blue-500" />
-                <span>{project.commentCount}</span>
+                <span className="text-gray-600">{project.commentCount}</span>
               </div>
             </div>
             <motion.button
@@ -83,4 +85,3 @@ export default function ProjectCard({ project }: ProjectCardProps) {
     </Link>
   );
 }
-

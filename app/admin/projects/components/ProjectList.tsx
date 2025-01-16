@@ -9,13 +9,14 @@ import { Plus } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface Project {
-  id: string
-  title: string
-  description: string
-  images: string[]
-  status: string
-  clientName: string
-  createdAt: Date
+  id: string;
+  title: string;
+  description: string;
+  images: string[];
+  status: string;
+  clientName: string;
+  createdAt: Date;
+  likeCount: number;
 }
 
 interface ProjectListProps {
@@ -46,10 +47,6 @@ export default function ProjectList({ updateTrigger }: ProjectListProps) {
   const handleAddProject = async (newProject: Project) => {
     setIsAddProjectOpen(false)
     await fetchProjects()
-  }
-
-  const handleDeleteProject = (id: string) => {
-    setProjects(prevProjects => prevProjects.filter(project => project.id !== id))
   }
 
   if (loading) {
@@ -89,7 +86,7 @@ export default function ProjectList({ updateTrigger }: ProjectListProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {projects.map((project) => (
-            <ProjectCard key={project.id} project={project} onDelete={handleDeleteProject} />
+            <ProjectCard key={project.id} project={project} />
           ))}
         </div>
       )}

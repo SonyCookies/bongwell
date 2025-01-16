@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { GlassWaterIcon as WaterIcon, Droplets } from 'lucide-react';
+import { GlassWaterIcon as WaterIcon, Droplets } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function HomeClient() {
@@ -78,11 +78,12 @@ export default function HomeClient() {
                 <Image
                   src="/bongwell-solutions-logo-full.svg"
                   alt="BongWell Solutions Logo"
-                  layout="fill"
-                  objectFit="contain"
+                  fill
+                  style={{ objectFit: "contain" }}
                   className="relative z-10"
                   priority
                 />
+
                 {/* Animated Rings */}
                 <div className="absolute inset-0 z-0">
                   {[...Array(5)].map((_, i) => (
@@ -90,7 +91,9 @@ export default function HomeClient() {
                       key={i}
                       className="absolute inset-0 border-2 border-[#00a5b5] rounded-full"
                       style={{
-                        boxShadow: `0 0 15px rgba(0, 165, 181, ${0.2 - i * 0.03})`,
+                        boxShadow: `0 0 15px rgba(0, 165, 181, ${
+                          0.2 - i * 0.03
+                        })`,
                         filter: `blur(${i * 0.8}px)`,
                       }}
                       initial={{ scale: 1, opacity: 0, z: 0 }}
@@ -203,4 +206,3 @@ export default function HomeClient() {
     </div>
   );
 }
-

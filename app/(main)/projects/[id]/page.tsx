@@ -6,7 +6,7 @@ import { doc, getDoc, updateDoc, arrayUnion, Timestamp } from 'firebase/firestor
 import { db } from '@/app/lib/firebase-config'
 import { useAuth } from '@/app/contexts/AuthContext'
 import Image from 'next/image'
-import { Heart, MessageCircle, Droplet, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Heart, MessageCircle, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface Comment {

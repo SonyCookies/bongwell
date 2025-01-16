@@ -1,16 +1,12 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import AdminSidebar from './components/AdminSidebar';
-import AdminHeader from './components/AdminHeader';
-import { AuthProvider, useAuth } from '@/app/contexts/AuthContext';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import AdminSidebar from "./components/AdminSidebar";
+import AdminHeader from "./components/AdminHeader";
+import { AuthProvider, useAuth } from "@/app/contexts/AuthContext";
 
-function AdminLayoutContent({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, loading } = useAuth();
   const [isClient, setIsClient] = useState(false);
@@ -22,17 +18,17 @@ function AdminLayoutContent({
   useEffect(() => {
     if (isClient && !loading) {
       if (!user) {
-        router.push('/auth/login');
+        router.push("/auth/login");
       }
     }
   }, [router, user, loading, isClient]);
 
   if (loading || !isClient) {
-    return <div>Loading...</div>;
+    return <div className="bg-white"></div>;
   }
 
   if (!user) {
-    return null; // Prevent rendering until the user is authenticated
+    return null; 
   }
 
   return (
