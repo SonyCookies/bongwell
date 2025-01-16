@@ -1,41 +1,50 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Droplet, Users, Leaf } from 'lucide-react'
+import { collection, getDocs, query, orderBy } from 'firebase/firestore'
+import { db } from '@/app/lib/firebase-config'
 import ProjectCard from './ProjectCard'
 
-const projects = [
-  {
-    title: "Community Well Project",
-    description: "Bringing clean water to rural communities through sustainable well drilling and installation.",
-    image: "/images/community-well.jpg",
-    Icon: Users
-  },
-  {
-    title: "Eco-Friendly Water Treatment",
-    description: "Implementing cutting-edge, environmentally friendly water treatment solutions for urban areas.",
-    image: "/images/eco-treatment.jpg",
-    Icon: Leaf
-  },
-  {
-    title: "Groundwater Mapping Initiative",
-    description: "Comprehensive groundwater mapping to identify and protect vital water resources.",
-    image: "/images/groundwater-mapping.jpg",
-    Icon: Droplet
-  },
-]
+interface Project {
+  id: string;
+  title: string;
+  description: string;
+  images: string[];
+  status: string;
+  clientName: string;
+  createdAt: Date;
+  likeCount: number;
+  commentCount: number;
+}
 
 export default function ProjectList() {
+  const [projects, setProjects] = useState<Project[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      const q = query(collection(db, 'projects'), orderBy('createdAt', 'desc'))
+      const querySnapshot = await getDocs(q)
+      const projectsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt.toDate(),
+      })) as Project[]
+      setProjects(projectsData)
+      setLoading(false)
+    }
+
+    fetchProjects()
+  }, [])
+
+  if (loading) {
+    return <div className="text-center py-8">Loading projects...</div>
+  }
+
   return (
     <>
-      <motion.h2 
-        className="text-4xl font-bold mb-12 text-center text-[#00a5b5]"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-      >
-        Explore Our Initiatives
-      </motion.h2>
+
       <motion.div 
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
         initial={{ opacity: 0 }}
@@ -44,12 +53,12 @@ export default function ProjectList() {
       >
         {projects.map((project, index) => (
           <motion.div
-            key={index}
+            key={project.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
           >
-            <ProjectCard {...project} />
+            <ProjectCard project={project} />
           </motion.div>
         ))}
       </motion.div>
