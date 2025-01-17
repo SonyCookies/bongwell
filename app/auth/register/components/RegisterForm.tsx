@@ -53,8 +53,8 @@ export default function RegisterForm() {
       } else {
         setError(responseData.error || 'Registration failed. Please try again.');
       }
-    } catch (error) {
-      setError('An unexpected error occurred.');
+    } catch (_) {
+      setError('An unexpected error occurred');
     }
   };
 
