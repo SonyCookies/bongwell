@@ -304,6 +304,10 @@ export default function ProjectViewEditPage({ params }: PageProps) {
     setComment("");
   };
 
+  if (isLoading) {
+    return <p className="ml-4"></p>;
+  }
+
   if (!project || !editedProject) {
     return <div>Project not found</div>;
   }
@@ -313,12 +317,12 @@ export default function ProjectViewEditPage({ params }: PageProps) {
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="space-y-6">
           {/* Title Input */}
-          <div>
+          <div className="space-y-2">
             <label
               htmlFor="title"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-base font-semibold text-gray-900"
             >
-              Title
+              Project Title
             </label>
             <input
               type="text"
@@ -327,15 +331,17 @@ export default function ProjectViewEditPage({ params }: PageProps) {
               onChange={(e) =>
                 setEditedProject({ ...editedProject, title: e.target.value })
               }
-              className="mt-1 block w-full text-gray-700 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+              required
+              className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm text-gray-900 text-base placeholder:text-gray-400 focus:border-indigo-500 focus:ring-indigo-500"
+              placeholder="Enter project title"
             />
           </div>
 
           {/* Description Input */}
-          <div>
+          <div className="space-y-2">
             <label
               htmlFor="description"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-base font-semibold text-gray-900"
             >
               Description
             </label>
@@ -349,15 +355,17 @@ export default function ProjectViewEditPage({ params }: PageProps) {
                 })
               }
               rows={4}
-              className="mt-1 block w-full text-gray-700 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+              required
+              className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm text-gray-900 text-base placeholder:text-gray-400 focus:border-indigo-500 focus:ring-indigo-500"
+              placeholder="Describe your project"
             />
           </div>
 
           {/* Status Dropdown */}
-          <div>
+          <div className="space-y-2">
             <label
               htmlFor="status"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-base font-semibold text-gray-900"
             >
               Status
             </label>
@@ -367,7 +375,7 @@ export default function ProjectViewEditPage({ params }: PageProps) {
               onChange={(e) =>
                 setEditedProject({ ...editedProject, status: e.target.value })
               }
-              className="mt-1 block w-full text-gray-700 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+              className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm text-gray-900 text-base focus:border-indigo-500 focus:ring-indigo-500"
             >
               <option value="planning">Planning</option>
               <option value="in-progress">In Progress</option>
@@ -377,10 +385,10 @@ export default function ProjectViewEditPage({ params }: PageProps) {
           </div>
 
           {/* Client Name */}
-          <div>
+          <div className="space-y-2">
             <label
               htmlFor="clientName"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-base font-semibold text-gray-900"
             >
               Client Name
             </label>
@@ -394,16 +402,18 @@ export default function ProjectViewEditPage({ params }: PageProps) {
                   clientName: e.target.value,
                 })
               }
-              className="mt-1 block w-full text-gray-700 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+              required
+              className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm text-gray-900 text-base placeholder:text-gray-400 focus:border-indigo-500 focus:ring-indigo-500"
+              placeholder="Enter client name"
             />
           </div>
 
           {/* Image Upload */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
+          <div className="space-y-2">
+            <label className="block text-base font-semibold text-gray-900">
               Project Images
             </label>
-            <div className="mt-2 flex items-center space-x-3">
+            <div className="mt-1 flex items-center">
               <input
                 type="file"
                 id="images"
@@ -417,7 +427,7 @@ export default function ProjectViewEditPage({ params }: PageProps) {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                className="inline-flex items-center px-6 py-3 rounded-lg border border-gray-300 text-base font-medium text-gray-700 bg-white shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
               >
                 <Upload className="h-5 w-5 mr-2" />
                 Upload Images
@@ -436,8 +446,7 @@ export default function ProjectViewEditPage({ params }: PageProps) {
                       src={image}
                       alt={`Preview ${index + 1}`}
                       fill
-                      className="object-cover rounded-lg"
-                      quality={75}
+                      className="absolute inset-0 object-cover rounded-lg"
                       sizes="(max-width: 768px) 100vw, 50vw"
                     />
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-lg">
@@ -468,10 +477,9 @@ export default function ProjectViewEditPage({ params }: PageProps) {
                     src={image.preview}
                     alt={`New Preview ${index + 1}`}
                     fill
-                    className="absolute inset-0 w-full h-full object-contain rounded-lg"
+                    className="absolute inset-0 object-cover rounded-lg"
                     sizes="(max-width: 768px) 100vw, 50vw"
                   />
-
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-lg">
                     <button
                       type="button"
@@ -497,7 +505,7 @@ export default function ProjectViewEditPage({ params }: PageProps) {
               ))}
             </div>
           </div>
-
+          
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row sm:justify-end gap-4 mt-6">
             <button

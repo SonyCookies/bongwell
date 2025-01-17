@@ -23,9 +23,10 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition-shadow duration-300"
+        className="rounded-xl shadow-lg overflow-hidden bg-white hover:shadow-xl transition-shadow duration-300 cursor-pointer"
       >
-        <div className="relative h-64 w-full">
+        {/* Project Image */}
+        <div className="relative h-56">
           <Image
             src={
               project.images && project.images.length > 0
@@ -35,20 +36,27 @@ export default function ProjectCard({ project }: ProjectCardProps) {
             alt={project.title}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            style={{ objectFit: "cover" }}
+            className="object-cover"
             priority
           />
         </div>
-        <div className="p-6">
-          <div className="flex justify-between items-start mb-4">
-            <h2 className="text-2xl font-semibold text-gray-800">
-              {project.title}
-            </h2>
-          </div>
-          <p className="text-gray-600 mb-4">{project.description}</p>
+
+        {/* Card Content */}
+        <div className="p-5 space-y-4">
+          {/* Title */}
+          <h2 className="text-lg font-semibold text-gray-900 truncate">
+            {project.title}
+          </h2>
+
+          {/* Description */}
+          <p className="text-sm text-gray-600 line-clamp-3">
+            {project.description}
+          </p>
+
+          {/* Status and Client */}
           <div className="flex justify-between items-center">
             <span
-              className={`px-2 py-1 rounded-full text-xs font-medium ${
+              className={`px-3 py-1 text-xs font-medium rounded-full ${
                 project.status === "completed"
                   ? "bg-green-100 text-green-800"
                   : project.status === "in-progress"
@@ -59,19 +67,22 @@ export default function ProjectCard({ project }: ProjectCardProps) {
               {project.status}
             </span>
             <span className="text-sm text-gray-500">
-              Client: {project.clientName}
+              Client: <strong>{project.clientName}</strong>
             </span>
           </div>
-          <div className="mt-4 flex items-center text-sm text-gray-500">
-            <Heart className="w-4 h-4 mr-1 text-red-500" />
-            <span>{project.likeCount} likes</span>
-          </div>
-          <div className="mt-4 text-sm text-gray-500">
-            Posted on {project.createdAt.toLocaleDateString()}
+
+          {/* Likes and Date */}
+          <div className="flex justify-between items-center text-gray-500 text-sm">
+            <div className="flex items-center">
+              <Heart className="w-4 h-4 mr-1 text-red-500" />
+              <span>{project.likeCount} Likes</span>
+            </div>
+            <div>
+              Posted on <strong>{project.createdAt.toLocaleDateString()}</strong>
+            </div>
           </div>
         </div>
       </motion.div>
     </Link>
   );
 }
-

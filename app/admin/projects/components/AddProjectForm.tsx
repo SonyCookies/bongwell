@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage, auth } from "@/app/lib/firebase-config";
 import {
-  AlertCircle,
   Loader2,
   Upload,
   X,
@@ -246,10 +246,11 @@ export default function AddProjectForm({
         <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
           {images.map((image, index) => (
             <div key={index} className="relative group aspect-square">
-              <img
+              <Image
                 src={image.preview}
                 alt={`Preview ${index + 1}`}
-                className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                fill
+                className="absolute inset-0 object-cover rounded-lg"
               />
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-lg">
                 <button
@@ -319,11 +320,14 @@ export default function AddProjectForm({
           >
             <div className="relative w-[90vw] h-[80vh] max-w-6xl">
               <div className="relative w-full h-full">
-                <img
+                <Image
                   src={selectedImage.url}
                   alt="Full size preview"
-                  className="w-full h-full object-contain"
+                  fill
+                  className="object-contain"
+                  sizes="100vw"
                 />
+
                 <div className="absolute top-0 right-0 p-2 bg-black bg-opacity-50 rounded-bl-lg">
                   <button
                     onClick={() => setSelectedImage(null)}

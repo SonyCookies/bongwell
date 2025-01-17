@@ -44,10 +44,10 @@ export default function ProjectList({ updateTrigger }: ProjectListProps) {
     fetchProjects()
   }, [updateTrigger])
 
-  const handleAddProject = async (newProject: Project) => {
-    setIsAddProjectOpen(false)
-    await fetchProjects()
-  }
+  const handleAddProject = async () => {
+    setIsAddProjectOpen(false);
+    await fetchProjects();
+  };  
 
   if (loading) {
     return <div className="text-center py-8">Loading projects...</div>

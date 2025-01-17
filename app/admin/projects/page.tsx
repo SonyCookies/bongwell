@@ -4,7 +4,7 @@ import { useState } from 'react'
 import ProjectList from './components/ProjectList'
 import AddProjectForm from './components/AddProjectForm'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X } from 'lucide-react'
+import { X } from 'lucide-react'
 
 export default function ProjectsPage() {
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false)
