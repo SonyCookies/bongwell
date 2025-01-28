@@ -6,7 +6,7 @@ import { doc, getDoc, updateDoc, arrayUnion, Timestamp } from 'firebase/firestor
 import { db } from '@/app/lib/firebase-config'
 import { useAuth } from '@/app/contexts/AuthContext'
 import Image from 'next/image'
-import { Heart, MessageCircle, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Heart, MessageCircle, Droplet, X, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface Comment {
@@ -34,6 +34,7 @@ export default function ProjectPage() {
   const [comment, setComment] = useState('')
   const [isLiked, setIsLiked] = useState(false)
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
+  const [showAllImages, setShowAllImages] = useState(false)
   const { user } = useAuth()
 
   useEffect(() => {
@@ -51,22 +52,18 @@ export default function ProjectPage() {
   }, [id, user])
 
   const handleLike = async () => {
-    if (!project || !user) return
+    if (!project) return;
 
-    const projectRef = doc(db, 'projects', project.id)
-    const newLikeCount = isLiked ? project.likeCount - 1 : project.likeCount + 1
-    const newLikes = isLiked
-      ? (project.likes || []).filter(uid => uid !== user.uid)
-      : [...(project.likes || []), user.uid]
+    const projectRef = doc(db, 'projects', project.id);
+    const newLikeCount = isLiked ? project.likeCount - 1 : project.likeCount + 1;
 
     await updateDoc(projectRef, {
-      likeCount: newLikeCount,
-      likes: newLikes
-    })
+      likeCount: newLikeCount
+    });
 
-    setProject(prev => prev ? { ...prev, likeCount: newLikeCount, likes: newLikes } : null)
-    setIsLiked(!isLiked)
-  }
+    setProject(prev => prev ? { ...prev, likeCount: newLikeCount } : null);
+    setIsLiked(!isLiked);
+  };
 
   const handleComment = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -144,9 +141,9 @@ export default function ProjectPage() {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="text-center text-white z-10"
+            className="text-center text-white z-10 px-4"
           >
-            <h1 className="text-5xl md:text-7xl font-bold mb-6">{project.title}</h1>
+            <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold mb-6">{project.title}</h1>
           </motion.div>
         </div>
 
@@ -201,22 +198,43 @@ export default function ProjectPage() {
             className="mb-8"
           >
             <h2 className="text-2xl font-bold mb-4 text-[#008080]">Project Images</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {project.images.map((image, index) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {project.images.slice(0, showAllImages ? undefined : 2).map((image, index) => (
                 <div
                   key={index}
                   className="relative aspect-square cursor-pointer overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
                   onClick={() => handleImageClick(index)}
                 >
                   <Image
-                    src={image}
+                    src={image || "/placeholder.svg"}
                     alt={`Project image ${index + 1}`}
                     fill
                     className="object-cover"
-                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   />
                 </div>
               ))}
+              {!showAllImages && project.images.length > 2 && (
+                <div
+                  className="relative aspect-square cursor-pointer overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
+                  onClick={() => setShowAllImages(true)}
+                >
+                  <Image
+                    src={project.images[2] || "/placeholder.svg"}
+                    alt={`Project image 3`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                    <div className="text-white text-center">
+                      <Plus className="w-8 h-8 mx-auto mb-2" />
+                      <p className="text-lg font-semibold">Show More</p>
+                      <p className="text-sm">{project.images.length - 2} more</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
 
@@ -237,7 +255,6 @@ export default function ProjectPage() {
                 <button 
                   onClick={handleLike}
                   className={`flex items-center space-x-2 ${isLiked ? 'text-[#008080]' : 'text-gray-500'} transition-colors duration-200`}
-                  disabled={!user}
                 >
                   <Heart className={`w-6 h-6 ${isLiked ? 'fill-current' : ''}`} />
                   <span className="text-lg">{project.likeCount || 0}</span>
@@ -316,11 +333,11 @@ export default function ProjectPage() {
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.9 }}
-              className="relative max-w-4xl w-full h-full"
+              className="relative w-full h-full max-w-4xl max-h-[80vh]"
               onClick={(e) => e.stopPropagation()}
             >
               <Image
-                src={project.images[selectedImageIndex]}
+                src={project.images[selectedImageIndex] || "/placeholder.svg"}
                 alt={`Enlarged project image ${selectedImageIndex + 1}`}
                 fill
                 className="object-contain"
